@@ -1,0 +1,477 @@
+import React, { useState } from 'react';
+import { 
+  Calendar, MapPin, Clock, User, Stethoscope, Utensils, 
+  MessageSquare, Lightbulb, CheckCircle, Send, ArrowRight, 
+  CalendarPlus, Loader2, Info, HelpCircle 
+} from 'lucide-react';
+
+// 【設定區】Google Apps Script 網址 (維持原設定)
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwnZ2TPg7EZs3chG_R_onxCk6AW0N9wfuD-n7RUSHDEYVVuiIDpBGPYhynGx9caC-aYAg/exec"; 
+
+export default function App() {
+  const [formData, setFormData] = useState({
+    name: '',
+    department: '',
+    attendance: '',
+    diet: '',
+    hasIssue: '', // Q6: 是否有議題 (yes/no)
+    issueCategories: [], // Q7: 議題類別 (複選)
+    issueDescription: '', // Q8: 案由說明
+    issueSuggestion: ''   // Q9: 建議方案
+  });
+
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // 處理一般文字/單選輸入
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // 處理特定欄位設定 (用於自訂元件)
+  const handleSelect = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // 處理複選框 (Checkbox)
+  const handleCheckboxChange = (value) => {
+    setFormData(prev => {
+      const currentCategories = prev.issueCategories;
+      if (currentCategories.includes(value)) {
+        // 若已存在則移除
+        return { ...prev, issueCategories: currentCategories.filter(item => item !== value) };
+      } else {
+        // 若不存在則加入
+        return { ...prev, issueCategories: [...currentCategories, value] };
+      }
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg('');
+
+    if (!GOOGLE_SCRIPT_URL) {
+      setTimeout(() => {
+        setSubmitted(true);
+        setIsSubmitting(false);
+      }, 1000);
+      return;
+    }
+
+    try {
+      // 轉換資料格式以符合 Google Sheet (將陣列轉字串)
+      const payload = {
+        ...formData,
+        issueCategories: formData.issueCategories.join(', ')
+      };
+
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+      });
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Error:", error);
+      setErrorMsg("傳送失敗，請檢查網路連線或稍後再試。");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const addToGoogleCalendar = () => {
+    const title = encodeURIComponent("住院醫師座談會");
+    const details = encodeURIComponent("午餐交流｜聽見您的聲音\n地點：554 會議室\n主辦單位：教學部");
+    const location = encodeURIComponent("554 會議室");
+    const startDate = "20251224T120000";
+    const endDate = "20251224T133000"; 
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${startDate}/${endDate}`;
+    window.open(url, '_blank');
+  };
+
+  // --- Render Success View ---
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] p-4 font-sans text-slate-800">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center border-t-4 border-sky-500">
+          <div className="flex justify-center mb-6">
+            <div className="bg-sky-100 p-4 rounded-full">
+              <CheckCircle size={48} className="text-sky-500" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-slate-800">報名成功！</h2>
+          <p className="text-slate-500 mb-8 leading-relaxed">
+            感謝您的意見與回饋。<br/>
+            您的聲音是我們優化教學環境的起點。
+          </p>
+          
+          <div className="bg-slate-50 p-6 rounded-xl text-sm text-left mb-6 space-y-3 border border-slate-100">
+            <div className="flex justify-between border-b border-slate-200 pb-2">
+              <span className="text-slate-500">姓名</span>
+              <span className="font-bold text-slate-700">{formData.name}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-200 pb-2">
+              <span className="text-slate-500">科別</span>
+              <span className="font-bold text-slate-700">{formData.department}</span>
+            </div>
+            <div className="flex justify-between pt-1">
+              <span className="text-slate-500">日期</span>
+              <span className="font-bold text-sky-600">114年12月24日</span>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <button 
+              onClick={addToGoogleCalendar}
+              className="w-full py-3 bg-white border border-sky-500 text-sky-600 rounded-xl hover:bg-sky-50 transition-colors duration-200 font-bold flex items-center justify-center shadow-sm"
+            >
+              <CalendarPlus className="mr-2" size={18} />
+              加入 Google 行事曆
+            </button>
+            
+            <button 
+              onClick={() => {
+                 setSubmitted(false);
+                 setFormData({ 
+                   name: '', department: '', attendance: '', diet: '', 
+                   hasIssue: '', issueCategories: [], issueDescription: '', issueSuggestion: '' 
+                 });
+              }}
+              className="w-full py-3 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-colors duration-200 shadow-md font-medium"
+            >
+              返回表單
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Render Form View ---
+  return (
+    <div className="min-h-screen bg-[#f0f4f8] py-10 px-4 sm:px-6 font-sans text-slate-800">
+      <div className="max-w-2xl mx-auto space-y-6">
+        
+        {/* Header Card */}
+        <header className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+          <div className="h-2 w-full bg-sky-500"></div>
+          <div className="p-8">
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-bold tracking-wide">
+                114年度 教學部
+              </span>
+              <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-bold tracking-wide flex items-center">
+                <Clock size={12} className="mr-1" />
+                截止：12/19 (四)
+              </span>
+            </div>
+            
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+              住院醫師座談會
+            </h1>
+            <p className="text-slate-500 text-lg mb-6">
+              午餐交流｜聽見您的聲音
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div className="flex items-center">
+                <Calendar className="text-sky-500 mr-2" size={18} />
+                114年12月24日 (三)
+              </div>
+              <div className="flex items-center">
+                <Clock className="text-sky-500 mr-2" size={18} />
+                中午 12:00 - 13:30
+              </div>
+              <div className="flex items-center">
+                <MapPin className="text-sky-500 mr-2" size={18} />
+                554 會議室
+              </div>
+            </div>
+            
+            <div className="mt-6 space-y-4 text-slate-600 leading-relaxed text-justify text-sm">
+               <p>
+                  邀請陳志成副院長、湯宏仁副院長、品管部杜漢祥部長與各科部教學負責人列席。為了貼近訓練需求並優化教學環境，我們舉辦了這場輕鬆的午餐約會，希望能聽聽大家真實的想法。
+               </p>
+               <p className="font-medium text-sky-800 bg-sky-50 p-4 rounded-xl border border-sky-100">
+                  💡 本座談會是您與醫院高層的直接溝通平台，旨在「精準且高效」地解決您在臨床、教學、福利與生活上的問題。
+               </p>
+            </div>
+          </div>
+        </header>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Section 1: Basic Info & Attendance */}
+          {/* 合併基本資料與出席，作為第一部分 */}
+          <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center pb-3 border-b border-slate-100">
+              <div className="bg-sky-100 p-2 rounded-lg mr-3">
+                <User className="text-sky-600" size={20} />
+              </div>
+              一、基本資料與出席
+            </h3>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    您的姓名 <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    name="name"
+                    required
+                    placeholder="請輸入姓名"
+                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all text-slate-800 shadow-sm"
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    您的科別 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select 
+                      name="department"
+                      required
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all text-slate-800 appearance-none shadow-sm cursor-pointer"
+                      value={formData.department}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                    >
+                      <option value="" disabled>請選擇所屬部門</option>
+                      <option value="兒科部">兒科部</option>
+                      <option value="放射診斷科">放射診斷科</option>
+                      <option value="解剖病理部">解剖病理部</option>
+                      <option value="復健部">復健部</option>
+                    </select>
+                    <Stethoscope className="absolute right-4 top-3.5 text-slate-400 pointer-events-none" size={18} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                 <label className="block text-sm font-bold text-slate-700 mb-3">
+                    請問您是否出席？ <span className="text-red-500">*</span>
+                 </label>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 shadow-sm ${formData.attendance === 'yes' ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-500' : 'border-slate-200 hover:border-sky-300 hover:bg-slate-50'}`}>
+                      <input type="radio" name="attendance" value="yes" checked={formData.attendance === 'yes'} onChange={() => handleSelect('attendance', 'yes')} className="hidden" disabled={isSubmitting}/>
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 ${formData.attendance === 'yes' ? 'border-sky-500' : 'border-slate-300'}`}>
+                        {formData.attendance === 'yes' && <div className="w-3 h-3 rounded-full bg-sky-500"></div>}
+                      </div>
+                      <span className={`font-bold ${formData.attendance === 'yes' ? 'text-sky-700' : 'text-slate-600'}`}>是，我會準時出席</span>
+                    </label>
+
+                    <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 shadow-sm ${formData.attendance === 'no' ? 'border-slate-400 bg-slate-100 ring-1 ring-slate-400' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
+                      <input type="radio" name="attendance" value="no" checked={formData.attendance === 'no'} onChange={() => handleSelect('attendance', 'no')} className="hidden" disabled={isSubmitting}/>
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 ${formData.attendance === 'no' ? 'border-slate-500' : 'border-slate-300'}`}>
+                        {formData.attendance === 'no' && <div className="w-3 h-3 rounded-full bg-slate-500"></div>}
+                      </div>
+                      <span className={`font-bold ${formData.attendance === 'no' ? 'text-slate-700' : 'text-slate-600'}`}>否，已有安排</span>
+                    </label>
+                 </div>
+              </div>
+
+              {formData.attendance === 'yes' && (
+                <div className="animate-fadeIn pt-4">
+                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                    您的飲食習慣 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {['葷食 (無忌口)', '素食', '不吃牛', '不吃豬'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => handleSelect('diet', option)}
+                        disabled={isSubmitting}
+                        className={`py-3 px-3 text-sm font-medium rounded-xl border transition-all duration-200 shadow-sm ${formData.diet === option ? 'bg-sky-500 text-white border-sky-500 ring-2 ring-offset-1 ring-sky-300' : 'bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600'}`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Section 2: Issue Proposal (Revised) */}
+          <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center">
+              <div className="bg-sky-100 p-2 rounded-lg mr-3">
+                <MessageSquare className="text-sky-600" size={20} />
+              </div>
+              二、 議題提案
+              <span className="ml-2 text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                必填/若無議題可跳過
+              </span>
+            </h3>
+
+            {/* Q6: 是否有議題 */}
+            <div className="mt-6 mb-6">
+              <label className="block text-sm font-bold text-slate-700 mb-3">
+                6. 您目前是否有「需院方高層協助」解決的議題？ <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-col sm:flex-row gap-4">
+                 <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all duration-200 w-full sm:w-auto ${formData.hasIssue === 'yes' ? 'border-sky-500 bg-sky-50' : 'border-slate-200'}`}>
+                    <input type="radio" name="hasIssue" value="yes" checked={formData.hasIssue === 'yes'} onChange={() => handleSelect('hasIssue', 'yes')} className="mr-3 accent-sky-500 h-5 w-5" disabled={isSubmitting}/>
+                    <span className="text-slate-700 font-medium">是 (請填寫下方7.欄位)</span>
+                 </label>
+                 <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all duration-200 w-full sm:w-auto ${formData.hasIssue === 'no' ? 'border-slate-400 bg-slate-50' : 'border-slate-200'}`}>
+                    <input type="radio" name="hasIssue" value="no" checked={formData.hasIssue === 'no'} onChange={() => handleSelect('hasIssue', 'no')} className="mr-3 accent-slate-500 h-5 w-5" disabled={isSubmitting}/>
+                    <span className="text-slate-700 font-medium">否 (可跳至第三區)</span>
+                 </label>
+              </div>
+            </div>
+
+            {/* Conditional Rendering for Q7, Q8, Q9 */}
+            {formData.hasIssue === 'yes' && (
+              <div className="animate-fadeIn space-y-8 border-t border-slate-100 pt-6">
+                
+                {/* Q7: 議題類別 */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                    7. 議題類別：(可複選)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      '臨床流程 (如：跨科照會、轉診、IT系統)',
+                      '教學訓練 (如：課程安排、評核、導師制度)',
+                      '福利與設備 (如：值班室、餐廳、交通)',
+                      '病人安全 (如：通報系統、SOP)',
+                      '職涯發展',
+                      '其他'
+                    ].map((category) => (
+                      <label key={category} className="flex items-start p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-sky-50 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.issueCategories.includes(category)}
+                          onChange={() => handleCheckboxChange(category)}
+                          className="mt-1 mr-3 h-4 w-4 accent-sky-500 rounded border-gray-300"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-sm text-slate-700">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Q8: 案由說明 */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    8. 案由說明
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    請簡述您遇到的「具體」困難，以及它如何影響臨床工作或住院醫師福祉。
+                  </p>
+                  <textarea 
+                    name="issueDescription"
+                    rows={4}
+                    placeholder="請輸入說明..."
+                    className="w-full p-4 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none text-slate-700 shadow-sm"
+                    value={formData.issueDescription}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  ></textarea>
+                </div>
+
+                {/* Q9: 建議方案 */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    9. 建議方案
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    您認為「醫院層級」可以如何協助？請提出「具體」建議。
+                  </p>
+                  <textarea 
+                    name="issueSuggestion"
+                    rows={4}
+                    placeholder="請輸入建議..."
+                    className="w-full p-4 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none text-slate-700 shadow-sm"
+                    value={formData.issueSuggestion}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  ></textarea>
+                </div>
+
+              </div>
+            )}
+          </section>
+
+          {errorMsg && (
+            <div className="p-4 bg-red-50 text-red-600 rounded-xl text-center font-bold border border-red-200 flex items-center justify-center">
+              <Info size={18} className="mr-2" />
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-4 bg-sky-500 text-white text-lg font-bold rounded-2xl hover:bg-sky-600 hover:shadow-lg transition-all duration-300 flex items-center justify-center group disabled:bg-slate-300 disabled:cursor-not-allowed transform active:scale-[0.99]"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 animate-spin" size={20} />
+                處理中...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 group-hover:translate-x-1 transition-transform" size={20} />
+                提交報名表
+              </>
+            )}
+          </button>
+
+        </form>
+
+        {/* Footer */}
+        <footer className="mt-12 text-center text-slate-400 text-sm pb-8 space-y-4">
+           {/* Add Calendar Button Here */}
+          <button 
+            onClick={addToGoogleCalendar}
+            className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-200 rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all text-sm font-medium shadow-sm mb-4"
+          >
+            <CalendarPlus size={16} className="mr-2" />
+            加入 Google 行事曆
+          </button>
+          
+          <div className="border-t border-slate-200 pt-6">
+            <p className="font-medium text-slate-500">主辦單位：教學部</p>
+            <p className="mt-1 text-xs">聯絡人：林淑雅 (分機 57438 / mh90022@mail.chimei.org.tw)</p>
+          </div>
+        </footer>
+
+      </div>
+      
+      {/* Global Style overrides */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+          font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
