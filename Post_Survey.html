@@ -161,8 +161,9 @@
 
         const PostEventSurvey = () => {
             // ==========================================
-            // 請在此處填入您的 Google Apps Script 網頁應用程式網址
-            const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE'; 
+            // 【重要】請在此處填入您的 Google Apps Script 網頁應用程式網址
+            // 格式範例：'https://script.google.com/macros/s/xxxxxxxxx/exec'
+            const GOOGLE_SCRIPT_URL = '請將您的Apps_Script網址貼在這裡'; 
             // ==========================================
 
             const [formData, setFormData] = useState({
@@ -204,6 +205,14 @@
                 setSubmitStatus('submitting');
                 setErrorMessage('');
 
+                // 檢查是否已設定 URL
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('請將您的')) {
+                    setSubmitStatus('error');
+                    setErrorMessage('程式錯誤：尚未設定後端 Google Script 網址。');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+
                 // --- 1. 必填驗證邏輯 ---
                 const requiredFields = [
                     'section1_q1', 'section1_q2',
@@ -215,32 +224,33 @@
                 // 檢查是否有未填寫的欄位 (null 或 空字串)
                 const missingFields = requiredFields.filter(field => {
                     const value = formData[field];
-                    // 檢查 null (評分題) 或 空字串/純空白 (文字題)
                     return value === null || (typeof value === 'string' && value.trim() === '');
                 });
 
                 if (missingFields.length > 0) {
                     setSubmitStatus('error');
                     setErrorMessage(`尚有 ${missingFields.length} 個必填項目未完成，請填寫標示為必填(*)的欄位。`);
-                    
-                    // 簡單的滾動到頂部提示使用者
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
 
                 try {
-                    // 模擬 API 呼叫 (替換為真實的 fetch)
-                    /* await fetch(GOOGLE_SCRIPT_URL, {
+                    // --- 真實資料傳送 (Google Apps Script) ---
+                    // 使用 no-cors 模式解決跨域問題
+                    // 注意：no-cors 模式下無法讀取 response 內容，只能發送
+                    await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
+                        mode: 'no-cors', // 關鍵：允許跨域發送
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8', // 避免觸發 OPTIONS 預檢請求
+                        },
                         body: JSON.stringify(formData)
                     });
-                    */
                    
-                    // 模擬網路延遲
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
+                    // 假設發送成功 (因為 no-cors 捕捉不到 4xx/5xx 錯誤，除非網路斷線)
                     setSubmitStatus('success');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
                 } catch (error) {
                     console.error('Error:', error);
                     setSubmitStatus('error');
