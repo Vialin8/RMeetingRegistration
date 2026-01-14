@@ -204,17 +204,17 @@
                         <label class="block text-sm font-medium text-gray-600 mb-3">請問您是否出席 1/27 座談餐會？ <span class="text-red-400">*</span></label>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <label class="relative flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors input-focus-ring">
-                                <input type="radio" name="attendance" value="yes" class="h-4 w-4 text-morandi-primary border-gray-300 focus:ring-morandi-primary" required onclick="toggleDiet(true)">
+                                <input type="radio" name="attendance" value="yes" class="h-4 w-4 text-morandi-primary border-gray-300 focus:ring-morandi-primary" required onclick="toggleSections(true)">
                                 <span class="ml-3 text-gray-700">🙆‍♂️ 是，我會準時出席</span>
                             </label>
                             <label class="relative flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors input-focus-ring">
-                                <input type="radio" name="attendance" value="no" class="h-4 w-4 text-morandi-primary border-gray-300 focus:ring-morandi-primary" onclick="toggleDiet(false)">
+                                <input type="radio" name="attendance" value="no" class="h-4 w-4 text-morandi-primary border-gray-300 focus:ring-morandi-primary" onclick="toggleSections(false)">
                                 <span class="ml-3 text-gray-700">🙅‍♀️ 否，已有行程 (不克出席)</span>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Diet (Conditional) -->
+                    <!-- Diet (Conditional: now fully collapses) -->
                     <div id="dietSection" class="transition-all duration-500 ease-in-out opacity-100 max-h-96 overflow-hidden">
                         <label class="block text-sm font-medium text-gray-600 mb-3">您的飲食習慣 <span class="text-red-400">*</span></label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -248,56 +248,59 @@
                 </div>
             </section>
 
-            <hr class="border-morandi-border/60">
-
-            <!-- Part 3: Feedback (LHS Focused) -->
-            <section class="bg-morandi-bg/50 rounded-xl p-6 -mx-2 md:mx-0">
-                <div class="flex items-center mb-4">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-morandi-accent text-white text-sm font-bold mr-3">3</span>
-                    <div>
-                        <h2 class="text-xl font-medium text-gray-700">從問題到解方 <span class="text-sm font-normal text-gray-500 ml-2">(Feedback Loop)</span></h2>
-                    </div>
-                </div>
+            <!-- Wrap Part 3 in a collapsible container -->
+            <div id="feedbackContainer" class="transition-all duration-500 ease-in-out opacity-100 max-h-[1000px] overflow-hidden">
+                <hr class="border-morandi-border/60 mb-10">
                 
-                <p class="text-sm text-gray-500 mb-6 pl-0 md:pl-11 leading-relaxed">
-                    若有具體建議或希望能現場討論的議題，歡迎提前填寫，讓我們能更有效率地解決問題。
-                </p>
-
-                <div class="grid grid-cols-1 gap-6 pl-0 md:pl-11">
-                    <!-- Problem -->
-                    <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative group focus-within:ring-1 focus-within:ring-morandi-accent/50 transition-all">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-red-300 rounded-l-lg group-hover:bg-red-400 transition-colors"></div>
-                        <label for="problem" class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
-                            <i class="fas fa-search mr-2 text-red-300"></i>
-                            您觀察到的現況或困難 (Problem)
-                        </label>
-                        <p class="text-xs text-gray-400 mb-3">提示：例如 臨床遇到的問題、硬體設備、某項教學活動時間與臨床衝突...</p>
-                        <textarea id="problem" name="problem" rows="3" 
-                            class="w-full p-3 bg-gray-50 border border-gray-100 rounded-md focus:outline-none focus:bg-white focus:border-morandi-accent transition-all resize-none text-sm text-gray-600"
-                            placeholder="請在此描述具體問題..."></textarea>
-                    </div>
-
-                    <!-- Arrow Indicator (Visual connection) -->
-                    <div class="flex justify-center -my-3 z-10">
-                        <div class="bg-morandi-bg text-gray-400 rounded-full p-1 border border-gray-200">
-                            <i class="fas fa-arrow-down"></i>
+                <!-- Part 3: Feedback (LHS Focused) -->
+                <section class="bg-morandi-bg/50 rounded-xl p-6 -mx-2 md:mx-0">
+                    <div class="flex items-center mb-4">
+                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-morandi-accent text-white text-sm font-bold mr-3">3</span>
+                        <div>
+                            <h2 class="text-xl font-medium text-gray-700">從問題到解方 <span class="text-sm font-normal text-gray-500 ml-2">(Feedback Loop)</span></h2>
                         </div>
                     </div>
+                    
+                    <p class="text-sm text-gray-500 mb-6 pl-0 md:pl-11 leading-relaxed">
+                        若有具體建議或希望能現場討論的議題，歡迎提前填寫，讓我們能更有效率地解決問題。
+                    </p>
 
-                    <!-- Solution -->
-                    <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative group focus-within:ring-1 focus-within:ring-morandi-secondary/50 transition-all">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-green-300 rounded-l-lg group-hover:bg-green-400 transition-colors"></div>
-                        <label for="solution" class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
-                            <i class="fas fa-rocket mr-2 text-green-300"></i>
-                            您的建議改善方案 (Solution)
-                        </label>
-                        <p class="text-xs text-gray-400 mb-3">提示：例如 建議建立制式交班 Check-list、調整會議時間至...</p>
-                        <textarea id="solution" name="solution" rows="3"
-                            class="w-full p-3 bg-gray-50 border border-gray-100 rounded-md focus:outline-none focus:bg-white focus:border-morandi-secondary transition-all resize-none text-sm text-gray-600"
-                            placeholder="您的建議是我們進步的動力..."></textarea>
+                    <div class="grid grid-cols-1 gap-6 pl-0 md:pl-11">
+                        <!-- Problem -->
+                        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative group focus-within:ring-1 focus-within:ring-morandi-accent/50 transition-all">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-red-300 rounded-l-lg group-hover:bg-red-400 transition-colors"></div>
+                            <label for="problem" class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+                                <i class="fas fa-search mr-2 text-red-300"></i>
+                                您觀察到的現況或困難 (Problem)
+                            </label>
+                            <p class="text-xs text-gray-400 mb-3">提示：例如 臨床遇到的問題、硬體設備、某項教學活動時間與臨床衝突...</p>
+                            <textarea id="problem" name="problem" rows="3" 
+                                class="w-full p-3 bg-gray-50 border border-gray-100 rounded-md focus:outline-none focus:bg-white focus:border-morandi-accent transition-all resize-none text-sm text-gray-600"
+                                placeholder="請在此描述具體問題..."></textarea>
+                        </div>
+
+                        <!-- Arrow Indicator (Visual connection) -->
+                        <div class="flex justify-center -my-3 z-10">
+                            <div class="bg-morandi-bg text-gray-400 rounded-full p-1 border border-gray-200">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                        </div>
+
+                        <!-- Solution -->
+                        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative group focus-within:ring-1 focus-within:ring-morandi-secondary/50 transition-all">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-green-300 rounded-l-lg group-hover:bg-green-400 transition-colors"></div>
+                            <label for="solution" class="block text-sm font-bold text-gray-700 mb-2 flex items-center">
+                                <i class="fas fa-rocket mr-2 text-green-300"></i>
+                                您的建議改善方案 (Solution)
+                            </label>
+                            <p class="text-xs text-gray-400 mb-3">提示：例如 建議建立制式交班 Check-list、調整會議時間至...</p>
+                            <textarea id="solution" name="solution" rows="3"
+                                class="w-full p-3 bg-gray-50 border border-gray-100 rounded-md focus:outline-none focus:bg-white focus:border-morandi-secondary transition-all resize-none text-sm text-gray-600"
+                                placeholder="您的建議是我們進步的動力..."></textarea>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
 
             <!-- Footer / Submit Area -->
             <div class="pt-4 flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-4">
@@ -326,7 +329,7 @@
         </div>
     </div>
 
-    <!-- Preview Modal (New) -->
+    <!-- Preview Modal -->
     <div id="previewModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl w-full max-w-lg mx-4 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-morandi-bg rounded-t-xl">
@@ -365,20 +368,47 @@
         // *** 重要：請填入您部署 Apps Script 獲得的 URL ***
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkl4fmKXvbmCRQhBTACZMkHxvftqeU1rKKChI6uomivRb4o0Zh2sw6JYnIni_J-Wtl/exec'; 
 
-        // Diet toggle logic
-        function toggleDiet(isAttending) {
+        // New Toggle Logic for both Diet and Part 3 Feedback
+        function toggleSections(isAttending) {
             const dietSection = document.getElementById('dietSection');
-            const dietInputs = document.getElementsByName('diet');
+            const feedbackContainer = document.getElementById('feedbackContainer');
             
+            const dietInputs = document.getElementsByName('diet');
+            const problemInput = document.getElementById('problem');
+            const solutionInput = document.getElementById('solution');
+
             if (isAttending) {
-                dietSection.classList.remove('opacity-50', 'pointer-events-none');
+                // Show Diet Section
+                dietSection.classList.remove('max-h-0', 'opacity-0');
+                dietSection.classList.add('max-h-96', 'opacity-100');
                 dietInputs.forEach(input => input.disabled = false);
+
+                // Show Feedback Section (Part 3)
+                feedbackContainer.classList.remove('max-h-0', 'opacity-0');
+                feedbackContainer.classList.add('max-h-[1000px]', 'opacity-100');
+                if(problemInput) problemInput.disabled = false;
+                if(solutionInput) solutionInput.disabled = false;
+
             } else {
-                dietSection.classList.add('opacity-50', 'pointer-events-none');
+                // Hide and Collapse Diet Section
+                dietSection.classList.remove('max-h-96', 'opacity-100');
+                dietSection.classList.add('max-h-0', 'opacity-0');
                 dietInputs.forEach(input => {
                     input.checked = false;
                     input.disabled = true;
                 });
+
+                // Hide and Collapse Feedback Section (Part 3)
+                feedbackContainer.classList.remove('max-h-[1000px]', 'opacity-100');
+                feedbackContainer.classList.add('max-h-0', 'opacity-0');
+                if(problemInput) {
+                    problemInput.value = ''; // clear value
+                    problemInput.disabled = true;
+                }
+                if(solutionInput) {
+                    solutionInput.value = ''; // clear value
+                    solutionInput.disabled = true;
+                }
             }
         }
 
@@ -403,13 +433,19 @@
             const attendMap = { 'yes': '🙆‍♂️ 出席', 'no': '🙅‍♀️ 不出席' };
             html += `<div class="flex justify-between border-b border-dashed pb-2"><span>出席意願：</span><span class="font-medium text-morandi-primary">${getRadio('attendance', attendMap)}</span></div>`;
             
+            // Only show detailed info if attending
             if (formData.get('attendance') === 'yes') {
                 const dietMap = { 'normal': '葷食', 'vegetarian': '素食', 'no_beef': '不吃牛', 'no_pork': '不吃豬' };
                 html += `<div class="flex justify-between border-b border-dashed pb-2"><span>飲食習慣：</span><span class="font-medium text-gray-800">${getRadio('diet', dietMap)}</span></div>`;
+                
+                const problemText = getVal('problem');
+                const solutionText = getVal('solution');
+                // Only show problem/solution if they are not just "unfilled" spans, or show simplified logic
+                html += `<div class="mt-4"><span class="block text-gray-500 text-xs mb-1">問題 (Problem)：</span><p class="bg-gray-50 p-2 rounded text-gray-700">${problemText}</p></div>`;
+                html += `<div class="mt-2"><span class="block text-gray-500 text-xs mb-1">建議 (Solution)：</span><p class="bg-gray-50 p-2 rounded text-gray-700">${solutionText}</p></div>`;
+            } else {
+                html += `<div class="mt-4 text-center text-gray-400 text-xs italic">（因不克出席，無須填寫飲食與建議）</div>`;
             }
-
-            html += `<div class="mt-4"><span class="block text-gray-500 text-xs mb-1">問題 (Problem)：</span><p class="bg-gray-50 p-2 rounded text-gray-700">${getVal('problem')}</p></div>`;
-            html += `<div class="mt-2"><span class="block text-gray-500 text-xs mb-1">建議 (Solution)：</span><p class="bg-gray-50 p-2 rounded text-gray-700">${getVal('solution')}</p></div>`;
             
             html += '</div>';
 
@@ -500,6 +536,11 @@
             setTimeout(() => {
                 modal.classList.add('hidden');
                 document.getElementById('registrationForm').reset();
+                // Reset logic to initial state (hidden diet/feedback)
+                // Assuming default is unchecked, we need to manually trigger reset visual state
+                // Or just reload page, but here we reset form
+                // Let's manually hide dynamic sections
+                toggleSections(false);
             }, 300);
         }
 
@@ -514,6 +555,21 @@
             const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start}/${eventDetails.end}&details=${encodeURIComponent(eventDetails.details)}&location=${encodeURIComponent(eventDetails.location)}`;
             window.open(googleCalendarUrl, '_blank');
         }
+        
+        // Initialize: Ensure sections are hidden on load (if nothing checked)
+        // However, standard form reset leaves them unchecked.
+        // We can run this once to be safe, but CSS handles initial state if not checked.
+        // Actually, CSS sets opacity-100 by default, so we might want to hide initially if no radio is selected?
+        // But for UX, sometimes it's better to show them or just let the user click. 
+        // Given the requirement "only show when yes is clicked", we should probably start hidden if "Yes" isn't pre-checked.
+        // The HTML has `opacity-100` initially. Let's fix that in JS on load.
+        window.addEventListener('DOMContentLoaded', (event) => {
+             const yesRadio = document.querySelector('input[name="attendance"][value="yes"]');
+             if (!yesRadio.checked) {
+                 toggleSections(false);
+             }
+        });
+
     </script>
 </body>
 </html>
