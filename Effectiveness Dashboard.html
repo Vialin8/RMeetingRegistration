@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>住院醫師座談會成效追蹤儀表板</title>
+    
+    <!-- React & Libraries -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body { font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[#F5F5F3] text-slate-700">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, Legend, ResponsiveContainer, LabelList } = window.Recharts || {};
+
+        // --- 設定與常數 ---
+        const API_URL = "https://script.google.com/macros/s/AKfycbz_Kl4AAHLu6Y9138HDCQR-ga_Bgtr3CsICaacJ57-Z3mlvYihJ3z_fWj5TRULxllPC/exec";
+
+        const COLORS = {
+            primary: '#6B859E', secondary: '#7B9E89', accent: '#D6A28D', warning: '#B6A6A0',
+            background: '#F5F5F3', text: '#4A5568', subText: '#718096',
+        };
+
+        const RESIDENT_TITLES = new Set([
+            "住院醫師", "住院醫師(R3)", "住院醫師(R4)", "住院醫師(R5)", "住院醫師(R6)", "住院醫師(R7)", "住院醫師(R8)", "住院醫師(R9)",
+            "住院醫師(LR1)", "住院醫師(LR2)", "住院醫師(LR3)", "住院醫師(LR4)", "住院醫師(LR5)", "住院醫師(LR6)", "住院醫師(LR7)", "住院醫師(LR8)", "住院醫師(LR9)",
+            "代理總醫師(R4)", "CR(總醫師R2)", "CR(總醫師R3)", "CR(總醫師R4)", "CR(總醫師R5)", "CR(總醫師R6)", "CR(總醫師R7)",
+            "代理總醫師(R3)", "代理總醫師", "代理總醫師(LR4)", "CR(總醫師LR2)", "CR(總醫師LR3)", "CR(總醫師LR4)", "CR(總醫師LR5)", "CR(總醫師LR6)", "CR(總醫師LR7)",
+            "代理總醫師(LR3)", "代理總醫師(R5)", "代理總醫師(R2)", "研究員(R3)", "研究員(R4)", "研究員(R5)", "研究員(R6)", "研究員(R7)", "研究員(R8)",
+            "代理總醫師(LR5)", "代理總醫師(LR2)", "研究員(LR3)", "研究員(LR4)", "研究員(LR5)", "研究員(LR6)", "研究員(LR7)", "研究員(LR8)",
+            "研究員兼CR(LR5)", "研究員(R9)", "研究員兼CR(R3)", "研究員兼CR(R4)", "研究員兼CR(R5)", "研究員兼CR(R6)", "研究員兼CR(R7)", "研究員兼CR(R8)",
+            "研究員兼代理CR(R5)", "資深研究員(R4)", "資深研究員(R5)", "資深研究員(R6)", "資深研究員(R7)", "資深研究員(R8)", "資深研究員(R9)", "資深研究員(R10)",
+            "資深研究員兼CR(R5)", "資深研究員兼CR(R6)", "資深研究員兼CR(R7)", "資深研究員兼CR(R8)", "資深研究員兼CR(R9)"
+        ]);
+
+        const Icons = {
+            LayoutDashboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+            FileText: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
+            CheckCircle2: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>,
+            Clock: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            HelpCircle: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>,
+            Users: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            Calendar: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+            ChevronRight: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
+            Filter: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+            Loader2: ({size=28, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+            AlertCircle: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+            Stethoscope: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>,
+            UserCheck: ({size=28}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+        };
+
+        const StatusBadge = ({ status }) => {
+            let color = COLORS.subText, bg = '#E2E8F0', Icon = Icons.HelpCircle;
+            if (status && status.includes('已結案')) { color = '#2F855A'; bg = '#E6FFFA'; Icon = Icons.CheckCircle2; }
+            else if (status && status.includes('進行中')) { color = '#C05621'; bg = '#FEEBC8'; Icon = Icons.Clock; }
+            else if (status && (status.includes('待決議') || status.includes('未'))) { color = '#744210'; bg = '#FAF5FF'; Icon = Icons.HelpCircle; }
+            // 放大 Badge 字體
+            return <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-medium border whitespace-nowrap`} style={{ color, backgroundColor: bg, borderColor: `${color}30` }}><Icon size={16} /> {status || '未定義'}</span>;
+        };
+
+        const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
+            <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <p className="text-lg font-medium text-slate-500 mb-1">{title}</p>
+                        <h3 className="text-5xl font-bold" style={{ color: COLORS.text }}>{value}</h3>
+                    </div>
+                    <div className={`p-4 rounded-xl opacity-80`} style={{ backgroundColor: `${color}20`, color: color }}><Icon size={32} /></div>
+                </div>
+                {subtext && <p className="text-base text-slate-400 mt-3">{subtext}</p>}
+            </div>
+        );
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('overview');
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [data, setData] = useState({ tracking: [], attendance: [], meta: {} });
+
+            useEffect(() => {
+                const fetchData = async () => {
+                    try {
+                        setLoading(true);
+                        const response = await fetch(`${API_URL}?t=${new Date().getTime()}`);
+                        if (!response.ok) throw new Error('網路回應異常');
+                        const result = await response.json();
+                        setData(result);
+                    } catch (err) {
+                        console.error(err);
+                        setError(err.message);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchData();
+            }, []);
+
+            const trackingData = useMemo(() => {
+                const mapped = data.tracking.map(item => ({
+                    date: item['會議日期']||'', 
+                    id: item['序號']||'', 
+                    category: item['議題類別']||'未分類', 
+                    goal: item['具體目標']||'', 
+                    proposer: item['提案者']||'', 
+                    pic: item['負責窗口 (PIC)']||'', 
+                    milestone: item['預計里程碑']||'', 
+                    status: item['現狀']||'待決議', 
+                    progress: item['最新進度摘要']||'', 
+                    updateDate: item['追蹤日期']||''
+                }));
+
+                const getStatusWeight = (status) => {
+                    if (status.includes('待決議') || status.includes('未')) return 1;
+                    if (status.includes('進行中')) return 2;
+                    if (status.includes('已結案') || status.includes('完成')) return 3;
+                    return 4;
+                };
+
+                return mapped.sort((a, b) => getStatusWeight(a.status) - getStatusWeight(b.status));
+            }, [data.tracking]);
+
+            // 計算 Overview 統計 (修復：確保此部分存在)
+            const overviewStats = useMemo(() => {
+                const total = trackingData.length;
+                const completed = trackingData.filter(i => i.status.includes('已結案')).length;
+                const inProgress = trackingData.filter(i => i.status.includes('進行中')).length;
+                const pending = trackingData.filter(i => i.status.includes('待決議') || i.status.includes('未')).length;
+
+                const pieData = [
+                    { name: '已結案', value: completed, color: COLORS.secondary },
+                    { name: '進行中', value: inProgress, color: COLORS.accent },
+                    { name: '待決議', value: pending, color: COLORS.warning },
+                ].filter(d => d.value > 0);
+
+                const categoryCount = trackingData.reduce((acc, curr) => {
+                    const cat = curr.category || '未分類';
+                    acc[cat] = (acc[cat] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                const barData = Object.keys(categoryCount).map(key => ({
+                    name: key, count: categoryCount[key]
+                }));
+
+                return { total, completed, inProgress, pending, pieData, barData };
+            }, [trackingData]);
+
+            const meetingStats = useMemo(() => {
+                const attendance = data.attendance || [];
+                const totalAttendees = attendance.length;
+                const titleCount = attendance.reduce((acc, curr) => {
+                    let group = curr['職稱'] || '其他';
+                    if(curr.isResident) group = '住院醫師'; 
+                    else if(group.includes('長') || group.includes('主任')) group = '主管/長官';
+                    else group = '其他人員';
+                    acc[group] = (acc[group] || 0) + 1;
+                    return acc;
+                }, {});
+                const attendanceChartData = Object.keys(titleCount).map(k => ({ name: k, value: titleCount[k] }));
+                const specificIssues = trackingData.filter(i => i.date.includes('2025-12-24') || i.date.includes('12/24'));
+
+                return { 
+                    totalAttendees, 
+                    attendanceChartData, 
+                    specificIssues,
+                    residentDepts: data.meta?.residentDepts || [],
+                    advisors: data.meta?.advisors || [],
+                    teachingSups: data.meta?.teachingSups || [],
+                    attendingSups: data.meta?.attendingSups || [],
+                    coordinators: data.meta?.coordinators || []
+                };
+            }, [data, trackingData]);
+
+            if (loading) return <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#F5F5F3]"><div className="animate-spin text-slate-400"><Icons.Loader2 size={48} /></div><p className="text-xl text-slate-500 font-medium">資料同步中，請稍候...</p></div>;
+            if (error) return <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#F5F5F3]"><div className="text-red-500"><Icons.AlertCircle size={48} /></div><h3 className="text-2xl font-bold text-slate-700">資料載入失敗</h3><p className="text-lg text-slate-500">{error}</p><button onClick={() => window.location.reload()} className="px-6 py-3 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 text-lg">重新整理</button></div>;
+
+            return (
+                <div className="min-h-screen font-sans bg-[#F5F5F3]">
+                    <nav className="bg-white border-b border-slate-200 px-8 py-5 flex flex-col md:flex-row justify-between items-center shadow-sm sticky top-0 z-20 gap-4">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div className="p-3 rounded-lg text-white" style={{ backgroundColor: COLORS.primary }}><Icons.LayoutDashboard size={28} /></div>
+                            <div><h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.text }}>住院醫師座談會</h1><p className="text-base text-slate-400">成效追蹤儀表板</p></div>
+                        </div>
+                        <div className="flex gap-3 bg-slate-100 p-1.5 rounded-lg w-full md:w-auto overflow-x-auto">
+                            <button onClick={() => setActiveTab('overview')} className={`flex-1 md:flex-none px-8 py-3 rounded-md text-lg font-medium whitespace-nowrap transition-all duration-200 ${activeTab === 'overview' ? 'bg-white shadow-sm text-slate-700' : 'text-slate-500 hover:text-slate-700'}`}>現況追蹤 (總覽)</button>
+                            <button onClick={() => setActiveTab('1141224')} className={`flex-1 md:flex-none px-8 py-3 rounded-md text-lg font-medium whitespace-nowrap transition-all duration-200 ${activeTab === '1141224' ? 'bg-white shadow-sm text-slate-700' : 'text-slate-500 hover:text-slate-700'}`}>1141224座談會</button>
+                        </div>
+                    </nav>
+
+                    <main className="p-10 max-w-[95%] mx-auto space-y-10">
+                        {activeTab === 'overview' && (
+                           <div className="animate-fade-in space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <StatCard title="總提案數" value={overviewStats.total} icon={Icons.FileText} color={COLORS.primary} subtext="累計至目前所有場次" />
+                                    <StatCard title="已結案" value={overviewStats.completed} icon={Icons.CheckCircle2} color={COLORS.secondary} subtext="達成率追蹤" />
+                                    <StatCard title="進行中" value={overviewStats.inProgress} icon={Icons.Clock} color={COLORS.accent} subtext="按進度執行中" />
+                                    <StatCard title="待決議" value={overviewStats.pending} icon={Icons.HelpCircle} color={COLORS.warning} subtext="需跨部門協調" />
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    <div className="lg:col-span-1 space-y-8">
+                                        {/* Pie Chart with Labels */}
+                                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                                            <h3 className="font-bold text-xl mb-6 flex items-center gap-2 text-slate-700"><Icons.Filter size={24} /> 案件狀態分佈</h3>
+                                            <div className="h-80 w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie 
+                                                            data={overviewStats.pieData} 
+                                                            innerRadius={80} 
+                                                            outerRadius={110} 
+                                                            paddingAngle={5} 
+                                                            dataKey="value"
+                                                            label={({ name, value }) => `${name}: ${value}`}
+                                                            labelLine={{ strokeWidth: 1 }}
+                                                            style={{ fontSize: '16px', fontWeight: '500' }}
+                                                        >
+                                                            {overviewStats.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                                                        </Pie>
+                                                        <RechartsTooltip />
+                                                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '16px' }}/>
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                        {/* Bar Chart with LabelList */}
+                                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                                            <h3 className="font-bold text-xl mb-6 flex items-center gap-2 text-slate-700"><Icons.LayoutDashboard size={24} /> 議題類別分析</h3>
+                                            <div className="h-80 w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={overviewStats.barData} layout="vertical" margin={{ top: 5, right: 40, left: 40, bottom: 5 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                                        <XAxis type="number" hide />
+                                                        <YAxis dataKey="name" type="category" width={120} tick={{fontSize: 16}} />
+                                                        <RechartsTooltip cursor={{fill: 'transparent'}} />
+                                                        <Bar dataKey="count" fill={COLORS.primary} radius={[0, 6, 6, 0]} barSize={32}>
+                                                            <LabelList dataKey="count" position="right" fill="#666" fontSize={16} fontWeight="bold" />
+                                                        </Bar>
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full">
+                                        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0">
+                                            <h3 className="font-bold text-2xl text-slate-700">全院議題追蹤清單</h3>
+                                            <span className="text-base text-slate-400 bg-slate-50 px-4 py-2 rounded">即時更新</span>
+                                        </div>
+                                        <div className="overflow-x-auto flex-1">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead className="bg-slate-50 text-slate-600 text-base uppercase tracking-wider sticky top-0">
+                                                    <tr>
+                                                        <th className="p-6 font-bold w-32">狀態</th>
+                                                        <th className="p-6 font-bold">議題與具體目標</th>
+                                                        <th className="p-6 font-bold w-48 hidden md:table-cell">負責窗口</th>
+                                                        <th className="p-6 font-bold w-48 hidden md:table-cell">預計里程碑</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 text-lg">
+                                                    {trackingData.map((item, index) => (
+                                                        <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="p-6 align-top"><StatusBadge status={item.status} /></td>
+                                                            <td className="p-6 align-top">
+                                                                <div className="font-bold text-slate-800 mb-2">{item.goal}</div>
+                                                                <div className="text-base text-slate-600 line-clamp-3 leading-relaxed">{item.progress}</div>
+                                                                <div className="md:hidden mt-3 text-base text-slate-400 space-y-1">
+                                                                    <div>PIC: {item.pic ? item.pic.split(' ')[0] : '-'}</div>
+                                                                    <div>里程碑: {item.milestone}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-6 align-top text-slate-600 hidden md:table-cell">{item.pic ? item.pic.split(' ')[0] : '-'}</td>
+                                                            <td className="p-6 align-top font-mono text-slate-500 text-base hidden md:table-cell">{item.milestone}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === '1141224' && (
+                            <div className="animate-fade-in space-y-8">
+                                <div className="bg-gradient-to-r from-[#6B859E] to-[#556b80] rounded-2xl p-10 text-white shadow-lg relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none"><Icons.Users size={180} /></div>
+                                    <div className="relative z-10">
+                                        <div className="flex flex-wrap items-center gap-4 mb-6 opacity-90 text-lg">
+                                            <Icons.Calendar size={20} /> 2025年12月24日 (週三) 12:00
+                                            <span className="mx-3 hidden md:inline">|</span>
+                                            <span className="block md:inline w-full md:w-auto mt-2 md:mt-0">地點：554會議室</span>
+                                        </div>
+                                        <h2 className="text-4xl md:text-5xl font-bold mb-10">1141224座談會</h2>
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20">
+                                                <div className="flex items-center gap-2 mb-2 opacity-90"><Icons.Users size={20} /> <span className="text-base">出席人數</span></div>
+                                                <span className="text-4xl font-bold">{meetingStats.totalAttendees} <span className="text-lg font-normal">人</span></span>
+                                            </div>
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20">
+                                                <div className="flex items-center gap-2 mb-2 opacity-90"><Icons.FileText size={20} /> <span className="text-base">提案數量</span></div>
+                                                <span className="text-4xl font-bold">{meetingStats.specificIssues.length} <span className="text-lg font-normal">案</span></span>
+                                            </div>
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 sm:col-span-2 lg:col-span-1">
+                                                <div className="flex items-center gap-2 mb-3 opacity-90"><Icons.Stethoscope size={20} /> <span className="text-base">住院醫師科別</span></div>
+                                                <div className="flex flex-wrap gap-2.5">
+                                                    {meetingStats.residentDepts.length > 0 ? meetingStats.residentDepts.map((d, i) => <span key={i} className="text-base bg-white/20 px-3 py-1.5 rounded text-white whitespace-nowrap">{d}</span>) : <span className="text-base opacity-60">無資料</span>}
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 sm:col-span-2 lg:col-span-1 flex flex-col gap-4">
+                                                <div className="flex items-center gap-2 mb-1 opacity-90"><Icons.UserCheck size={20} /> <span className="text-base">出席長官</span></div>
+                                                <div className="overflow-y-auto custom-scrollbar flex-1 space-y-3 max-h-[160px]">
+                                                    {meetingStats.advisors.length > 0 && <div><span className="text-sm text-white/80 block mb-1">指導長官</span><div className="flex flex-wrap gap-2">{meetingStats.advisors.map((n, i) => <span key={i} className="text-base bg-[#D6A28D]/90 px-2.5 py-1 rounded text-white">{n}</span>)}</div></div>}
+                                                    {meetingStats.teachingSups.length > 0 && <div><span className="text-sm text-white/80 block mb-1">教學主管</span><div className="flex flex-wrap gap-2">{meetingStats.teachingSups.map((n, i) => <span key={i} className="text-base bg-[#D6A28D]/90 px-2.5 py-1 rounded text-white">{n}</span>)}</div></div>}
+                                                    {meetingStats.attendingSups.length > 0 && <div><span className="text-sm text-white/80 block mb-1">列席主管</span><div className="flex flex-wrap gap-2">{meetingStats.attendingSups.map((n, i) => <span key={i} className="text-base bg-[#D6A28D]/90 px-2.5 py-1 rounded text-white">{n}</span>)}</div></div>}
+                                                    {meetingStats.coordinators.length > 0 && <div><span className="text-sm text-white/80 block mb-1">教學負責人</span><div className="flex flex-wrap gap-2">{meetingStats.coordinators.map((n, i) => <span key={i} className="text-base bg-[#D6A28D]/90 px-2.5 py-1 rounded text-white">{n}</span>)}</div></div>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                                    <div className="p-8 border-b border-slate-100 sticky top-0 bg-white z-10 rounded-t-2xl"><h3 className="font-bold text-2xl text-slate-700 flex items-center gap-3"><Icons.FileText className="text-slate-400" size={28}/> 本場次決議成效追蹤</h3></div>
+                                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {meetingStats.specificIssues.map((issue, idx) => (
+                                            <div key={idx} className="border border-slate-200 rounded-xl p-8 bg-slate-50/50 flex flex-col h-full hover:border-slate-300 transition-all">
+                                                <div className="flex justify-between items-start mb-5"><div className="flex items-center gap-3"><span className="text-base font-bold text-slate-500 bg-white border px-3 py-1 rounded">#{issue.id}</span><span className="text-lg font-semibold text-slate-600">{issue.category}</span></div><StatusBadge status={issue.status} /></div>
+                                                <h4 className="text-2xl font-bold text-slate-800 mb-6 flex-grow leading-tight">{issue.goal}</h4>
+                                                <div className="grid grid-cols-2 gap-6 text-lg text-slate-600 mb-6 bg-white p-5 rounded-lg border border-slate-100"><div><span className="block text-sm text-slate-400 mb-1.5">提案者</span>{issue.proposer}</div><div><span className="block text-sm text-slate-400 mb-1.5">負責窗口 (PIC)</span>{issue.pic}</div></div>
+                                                <div className="flex items-start gap-4 bg-[#F8F9FA] p-5 rounded-lg border-l-4 mt-auto" style={{borderLeftColor: COLORS.primary}}><div className="mt-1 text-slate-400 flex-shrink-0"><Icons.ChevronRight size={20} /></div><div><span className="block text-base font-bold text-slate-500 mb-1">最新進度 ({issue.updateDate})</span><p className="text-lg text-slate-700 leading-relaxed">{issue.progress}</p></div></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
