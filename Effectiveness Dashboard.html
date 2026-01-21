@@ -22,7 +22,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-[#F5F5F3] text-slate-700">
+<body class="bg-[#F5F5F3] text-slate-700 text-base">
 
     <div id="root"></div>
 
@@ -306,22 +306,26 @@
                                         </div>
                                         <h2 className="text-4xl md:text-5xl font-bold mb-10">1141224座談會</h2>
                                         
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+                                            {/* 出席人數 - 2 cols */}
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 lg:col-span-2">
                                                 <div className="flex items-center gap-2 mb-2 opacity-90"><Icons.Users size={20} /> <span className="text-base">出席人數</span></div>
                                                 <span className="text-4xl font-bold">{meetingStats.totalAttendees} <span className="text-lg font-normal">人</span></span>
                                             </div>
-                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20">
+                                            {/* 提案數量 - 2 cols */}
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 lg:col-span-2">
                                                 <div className="flex items-center gap-2 mb-2 opacity-90"><Icons.FileText size={20} /> <span className="text-base">提案數量</span></div>
                                                 <span className="text-4xl font-bold">{meetingStats.specificIssues.length} <span className="text-lg font-normal">案</span></span>
                                             </div>
-                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 sm:col-span-2 lg:col-span-1">
+                                            {/* 住院醫師科別 - 8 cols */}
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 lg:col-span-8">
                                                 <div className="flex items-center gap-2 mb-3 opacity-90"><Icons.Stethoscope size={20} /> <span className="text-base">住院醫師科別</span></div>
                                                 <div className="flex flex-wrap gap-2.5">
                                                     {meetingStats.residentDepts.length > 0 ? meetingStats.residentDepts.map((d, i) => <span key={i} className="text-base bg-white/20 px-3 py-1.5 rounded text-white whitespace-nowrap">{d}</span>) : <span className="text-base opacity-60">無資料</span>}
                                                 </div>
                                             </div>
-                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 sm:col-span-2 lg:col-span-1 flex flex-col gap-4">
+                                            {/* 出席長官 - 12 cols (Full row) */}
+                                            <div className="bg-white/10 backdrop-blur-sm px-6 py-5 rounded-xl border border-white/20 lg:col-span-12 flex flex-col gap-4">
                                                 <div className="flex items-center gap-2 mb-1 opacity-90"><Icons.UserCheck size={20} /> <span className="text-base">出席長官</span></div>
                                                 <div className="overflow-y-auto custom-scrollbar flex-1 space-y-3 max-h-[160px]">
                                                     {meetingStats.advisors.length > 0 && <div><span className="text-sm text-white/80 block mb-1">指導長官</span><div className="flex flex-wrap gap-2">{meetingStats.advisors.map((n, i) => <span key={i} className="text-base bg-[#D6A28D]/90 px-2.5 py-1 rounded text-white">{n}</span>)}</div></div>}
