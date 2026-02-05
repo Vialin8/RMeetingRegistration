@@ -131,14 +131,16 @@
                     return ['指導長官', '教學主管', '列席主管', '教學負責人', '主席'].includes(role);
                 });
                 const advisors = meetingAttendance.filter(p => p['職級'] === '指導長官').map(p => ({ name: p['姓名'], title: p['職稱'] }));
+                const chairs = meetingAttendance.filter(p => p['職級'] === '主席').map(p => ({ name: p['姓名'], title: p['職稱'] }));
                 const teachingSups = meetingAttendance.filter(p => p['職級'] === '教學主管').map(p => ({ name: p['姓名'], title: p['職稱'] }));
-                const attendingSups = meetingAttendance.filter(p => p['職級'] === '列席主管' || p['職級'] === '主席').map(p => ({ name: p['姓名'], title: p['職稱'] }));
+                const attendingSups = meetingAttendance.filter(p => p['職級'] === '列席主管').map(p => ({ name: p['姓名'], title: p['職稱'] }));
                 const coordinators = meetingAttendance.filter(p => p['職級'] === '教學負責人').map(p => ({ name: p['姓名'], title: p['職稱'] }));
                 return {
                     totalAttendees: meetingAttendance.length,
                     residentCount: residents.length,
                     totalIssues: meetingIssues.length,
                     residentDepts,
+                    chairs,
                     advisors,
                     teachingSups,
                     attendingSups,
@@ -176,12 +178,13 @@
                             {/* 出席長官 */}
                             <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/20 col-span-2 md:col-span-4 lg:col-span-6">
                                 <div className="flex items-center gap-2 mb-2 opacity-90 text-sm"><Icons.UserCheck size={16} /> 出席長官</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                                    {stats.chairs.length > 0 && <div><span className="text-xs text-white/70 block mb-1">主席</span><div className="flex flex-wrap gap-1.5">{stats.chairs.map((p, i) => <span key={i} className="text-sm bg-[#D6A28D]/90 px-2 py-0.5 rounded text-white">{p.name} {p.title}</span>)}</div></div>}
                                     {stats.advisors.length > 0 && <div><span className="text-xs text-white/70 block mb-1">指導長官</span><div className="flex flex-wrap gap-1.5">{stats.advisors.map((p, i) => <span key={i} className="text-sm bg-[#D6A28D]/90 px-2 py-0.5 rounded text-white">{p.name} {p.title}</span>)}</div></div>}
                                     {stats.teachingSups.length > 0 && <div><span className="text-xs text-white/70 block mb-1">教學主管</span><div className="flex flex-wrap gap-1.5">{stats.teachingSups.map((p, i) => <span key={i} className="text-sm bg-[#D6A28D]/90 px-2 py-0.5 rounded text-white">{p.name} {p.title}</span>)}</div></div>}
                                     {stats.attendingSups.length > 0 && <div><span className="text-xs text-white/70 block mb-1">列席主管</span><div className="flex flex-wrap gap-1.5">{stats.attendingSups.map((p, i) => <span key={i} className="text-sm bg-[#D6A28D]/90 px-2 py-0.5 rounded text-white">{p.name} {p.title}</span>)}</div></div>}
                                     {stats.coordinators.length > 0 && <div><span className="text-xs text-white/70 block mb-1">教學負責人</span><div className="flex flex-wrap gap-1.5">{stats.coordinators.map((p, i) => <span key={i} className="text-sm bg-[#D6A28D]/90 px-2 py-0.5 rounded text-white">{p.name} {p.title}</span>)}</div></div>}
-                                    {stats.advisors.length === 0 && stats.teachingSups.length === 0 && stats.attendingSups.length === 0 && stats.coordinators.length === 0 && <span className="text-sm opacity-60">請在出席名單中填寫長官資料</span>}
+                                    {stats.chairs.length === 0 && stats.advisors.length === 0 && stats.teachingSups.length === 0 && stats.attendingSups.length === 0 && stats.coordinators.length === 0 && <span className="text-sm opacity-60">請在出席名單中填寫長官資料</span>}
                                 </div>
                             </div>
                         </div>
