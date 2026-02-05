@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>住院醫師座談會成效追蹤儀表板</title>
-
     <!-- React & Libraries -->
     <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
@@ -13,36 +11,29 @@
     <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
         body {
             font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
-
         .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(0, 0, 0, 0.05);
         }
-
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: rgba(0, 0, 0, 0.2);
             border-radius: 4px;
         }
-
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out;
         }
-
         @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -50,34 +41,37 @@
         }
     </style>
 </head>
-
 <body class="bg-[#F5F5F3] text-slate-700 text-base">
-
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, Legend, ResponsiveContainer, LabelList } = window.Recharts || {};
-
         // --- 設定與常數 ---
         const API_URL = "https://script.google.com/macros/s/AKfycbwp8wbNQaU0J9SQX6r1EUdhuAvnfDgsyfSXkIjtOHtGeXgu8hSN5_jKQ9_WqpFbvhkR9g/exec";
-
         // 會議設定 - 新增會議只需在此處添加
         const MEETINGS = [
             { id: '20251224', date: '2025/12/24', displayDate: '2025年12月24日 (週三)', time: '12:00', location: '554會議室', dateFilter: ['12/24/2025', '2025/12/24', '2025-12-24', '12/24'], photos: ['photos/20251224_01.jpg', 'photos/20251224_02.jpg', 'photos/20251224_03.jpg', 'photos/20251224_04.jpg'] },
             { id: '20260127', date: '2026/01/27', displayDate: '2026年01月27日 (週一)', time: '12:00', location: '563會議室', dateFilter: ['01/27/2026', '1/27/2026', '2026/01/27', '2026-01-27', '01/27', '1/27'], photos: ['photos/20260127_01.jpg', 'photos/20260127_02.jpg', 'photos/20260127_03.jpg', 'photos/20260127_04.jpg', 'photos/20260127_05.jpg'] }
         ];
-
-
-
         const COLORS = {
             primary: '#6B859E', secondary: '#7B9E89', accent: '#D6A28D', warning: '#B6A6A0',
             background: '#F5F5F3', text: '#4A5568', subText: '#718096',
         };
-
         const RESIDENT_KEYWORDS = ['住院醫師', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9',
             'LR1', 'LR2', 'LR3', 'LR4', 'LR5', '總醫師', 'CR', '研究員', '代理總醫師'];
-
+        // 日期格式化函數 - 統一處理各種日期格式
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            // 如果已經是 MM/DD/YYYY 格式，直接返回
+            if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) return dateStr;
+            // 嘗試解析日期字串
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr; // 無法解析則返回原值
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        };
         const Icons = {
             LayoutDashboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>,
             FileText: ({ size = 28 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>,
@@ -94,7 +88,6 @@
             UserCheck: ({ size = 28 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></svg>,
             Camera: ({ size = 28 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg>
         };
-
         const StatusBadge = ({ status }) => {
             let color = COLORS.subText, bg = '#E2E8F0', Icon = Icons.HelpCircle;
             if (status && status.includes('已結案')) { color = '#2F855A'; bg = '#E6FFFA'; Icon = Icons.CheckCircle2; }
@@ -102,7 +95,6 @@
             else if (status && (status.includes('待決議') || status.includes('未'))) { color = '#744210'; bg = '#FAF5FF'; Icon = Icons.HelpCircle; }
             return <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-medium border whitespace-nowrap`} style={{ color, backgroundColor: bg, borderColor: `${color}30` }}><Icon size={16} /> {status || '未定義'}</span>;
         };
-
         const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
             <div className="bg-white p-7 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start">
@@ -115,44 +107,33 @@
                 {subtext && <p className="text-base text-slate-400 mt-3">{subtext}</p>}
             </div>
         );
-
         // 會議詳情頁面組件
         const MeetingPage = ({ meeting, trackingData, attendanceData }) => {
             // 過濾該會議的議題 - 日期已轉換為 YYYYMMDD 格式
             const meetingIssues = useMemo(() => {
                 return trackingData.filter(item => item.date === meeting.id);
             }, [trackingData, meeting]);
-
-
-
-
-
             // 過濾該會議的出席人員
             const meetingAttendance = useMemo(() => {
                 return attendanceData.filter(person =>
                     meeting.dateFilter.some(df => (person['場次'] || '').includes(df))
                 );
             }, [attendanceData, meeting]);
-
             const stats = useMemo(() => {
                 const residents = meetingAttendance.filter(p => {
                     const title = p['職稱'] || '';
                     const role = p['職級'] || '';
                     return role === '住院醫師' || RESIDENT_KEYWORDS.some(k => title.includes(k));
                 });
-
                 const residentDepts = [...new Set(residents.map(r => r['科別名'] || r['科別'] || '').filter(d => d))];
-
                 const supervisors = meetingAttendance.filter(p => {
                     const role = p['職級'] || '';
                     return ['指導長官', '教學主管', '列席主管', '教學負責人', '主席'].includes(role);
                 });
-
                 const advisors = meetingAttendance.filter(p => p['職級'] === '指導長官').map(p => ({ name: p['姓名'], title: p['職稱'] }));
                 const teachingSups = meetingAttendance.filter(p => p['職級'] === '教學主管').map(p => ({ name: p['姓名'], title: p['職稱'] }));
                 const attendingSups = meetingAttendance.filter(p => p['職級'] === '列席主管' || p['職級'] === '主席').map(p => ({ name: p['姓名'], title: p['職稱'] }));
                 const coordinators = meetingAttendance.filter(p => p['職級'] === '教學負責人').map(p => ({ name: p['姓名'], title: p['職稱'] }));
-
                 return {
                     totalAttendees: meetingAttendance.length,
                     residentCount: residents.length,
@@ -164,7 +145,6 @@
                     coordinators
                 };
             }, [meetingAttendance, meetingIssues]);
-
             return (
                 <div className="animate-fade-in space-y-8">
                     {/* 會議標題區 */}
@@ -175,7 +155,6 @@
                             <span className="block md:inline w-full md:w-auto mt-1 md:mt-0">地點：{meeting.location}</span>
                         </div>
                         <h2 className="text-3xl md:text-4xl font-bold mb-6">{meeting.id}座談會</h2>
-
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {/* 住院醫師出席數 */}
                             <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/20">
@@ -207,7 +186,6 @@
                             </div>
                         </div>
                     </div>
-
                     {/* 議題追蹤區 */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
                         <div className="p-8 border-b border-slate-100 sticky top-0 bg-white z-10 rounded-t-2xl">
@@ -248,7 +226,6 @@
                             )}
                         </div>
                     </div>
-
                     {/* 會議照片區 */}
                     {meeting.photos && meeting.photos.length > 0 && (
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
@@ -276,13 +253,11 @@
                 </div>
             );
         };
-
         const App = () => {
             const [activeTab, setActiveTab] = useState('overview');
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             const [data, setData] = useState({ tracking: [], attendance: [], meta: {} });
-
             useEffect(() => {
                 const fetchData = async () => {
                     try {
@@ -300,7 +275,6 @@
                 };
                 fetchData();
             }, []);
-
             const trackingData = useMemo(() => {
                 const mapped = data.tracking.map(item => {
                     // 狀態欄位判斷 - 檢查 '現狀' 欄位內容
@@ -313,11 +287,9 @@
                     } else if (status.includes('待決議') || status.includes('待') || status === '') {
                         status = '待決議';
                     }
-
                     // 從提案者欄位提取科別 (格式如「病理部/張簡于聖醫師」)
                     const proposer = item['提案者'] || '';
                     const dept = proposer.includes('/') ? proposer.split('/')[0] : proposer;
-
                     // 場次轉換 - API 回傳 MM/DD/YYYY 格式（如 12/24/2025, 01/27/2026）
                     let meetingDate = item['場次'] || '';
                     // 轉換為統一格式 YYYYMMDD
@@ -327,7 +299,6 @@
                         meetingDate = '20260127';
                     }
                     // 保留原始值以供後續匹配
-
                     return {
                         date: meetingDate,
                         id: item['序號'] || '',
@@ -340,49 +311,40 @@
                         status: status,
                         progress: item['追蹤報告'] || '',
                         resolution: item['會議決議'] || '',
-                        updateDate: item['追蹤日期'] || '',
-                        closeDate: item['結案日期'] || ''
+                        updateDate: formatDate(item['追蹤日期']),
+                        closeDate: formatDate(item['結案日期'])
                     };
                 });
-
                 const getStatusWeight = (status) => {
                     if (status.includes('待決議') || status.includes('未')) return 1;
                     if (status.includes('進行中')) return 2;
                     if (status.includes('已結案') || status.includes('完成')) return 3;
                     return 4;
                 };
-
                 return mapped.sort((a, b) => getStatusWeight(a.status) - getStatusWeight(b.status));
             }, [data.tracking]);
-
             const overviewStats = useMemo(() => {
                 const total = trackingData.length;
                 const completed = trackingData.filter(i => i.status.includes('已結案')).length;
                 const inProgress = trackingData.filter(i => i.status.includes('進行中')).length;
                 const pending = trackingData.filter(i => i.status.includes('待決議') || i.status.includes('未')).length;
-
                 const pieData = [
                     { name: '已結案', value: completed, color: COLORS.secondary },
                     { name: '進行中', value: inProgress, color: COLORS.accent },
                     { name: '待決議', value: pending, color: COLORS.warning },
                 ].filter(d => d.value > 0);
-
                 const categoryCount = trackingData.reduce((acc, curr) => {
                     const cat = curr.category || '未分類';
                     acc[cat] = (acc[cat] || 0) + 1;
                     return acc;
                 }, {});
-
                 const barData = Object.keys(categoryCount).map(key => ({
                     name: key, count: categoryCount[key]
                 }));
-
                 return { total, completed, inProgress, pending, pieData, barData };
             }, [trackingData]);
-
             if (loading) return <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#F5F5F3]"><div className="animate-spin text-slate-400"><Icons.Loader2 size={48} /></div><p className="text-xl text-slate-500 font-medium">資料同步中，請稍候...</p></div>;
             if (error) return <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#F5F5F3]"><div className="text-red-500"><Icons.AlertCircle size={48} /></div><h3 className="text-2xl font-bold text-slate-700">資料載入失敗</h3><p className="text-lg text-slate-500">{error}</p><button onClick={() => window.location.reload()} className="px-6 py-3 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 text-lg">重新整理</button></div>;
-
             return (
                 <div className="min-h-screen font-sans bg-[#F5F5F3] flex flex-col">
                     <nav className="bg-white border-b border-slate-200 px-8 py-5 flex flex-col md:flex-row justify-between items-center shadow-sm sticky top-0 z-20 gap-4">
@@ -397,7 +359,6 @@
                             ))}
                         </div>
                     </nav>
-
                     <main className="p-10 max-w-[95%] mx-auto space-y-10 flex-grow w-full">
                         {activeTab === 'overview' && (
                             <div className="animate-fade-in space-y-8">
@@ -499,7 +460,6 @@
                                 </div>
                             </div>
                         )}
-
                         {/* 動態渲染各場會議頁面 */}
                         {MEETINGS.map(m => (
                             activeTab === m.id && (
@@ -512,7 +472,6 @@
                             )
                         ))}
                     </main>
-
                     <footer className="bg-white border-t border-slate-200 py-6">
                         <div className="max-w-[95%] mx-auto text-center text-slate-400 text-base font-medium">
                             教學部 住院醫師組
@@ -521,10 +480,8 @@
                 </div>
             );
         };
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
-
 </html>
