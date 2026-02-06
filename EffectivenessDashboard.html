@@ -435,7 +435,7 @@
                         goal: item['具體目標'] || '',
                         proposer: proposer,
                         dept: dept,
-                        pic: item['負責窗口'] || item['負責單位(PIC)'] || item['負責窗口 (PIC)'] || '',
+                        pic: item['負責單位'] || item['負責窗口'] || '',
                         milestone: item['預計里程碑'] || '',
                         status: status,
                         progress: item['第一次追蹤摘要'] || item['追蹤報告'] || '',
@@ -577,6 +577,7 @@
                                                     <th className="p-4 font-bold w-24 hidden lg:table-cell">議題類別</th>
                                                     <th className="p-4 font-bold">具體目標</th>
                                                     <th className="p-4 font-bold hidden md:table-cell" style={{ minWidth: '280px' }}>追蹤時間軸</th>
+                                                    <th className="p-4 font-bold w-24 hidden lg:table-cell">負責單位</th>
                                                     <th className="p-4 font-bold hidden xl:table-cell" style={{ minWidth: '300px' }}>追蹤報告/會議決議</th>
                                                 </tr>
                                             </thead>
@@ -640,6 +641,10 @@
                                                                 ) : (
                                                                     <span className="text-sm text-slate-400">尚無追蹤紀錄</span>
                                                                 )}
+                                                            </td>
+                                                            {/* 負責單位 */}
+                                                            <td className="p-4 align-top text-slate-600 text-sm hidden lg:table-cell">
+                                                                {item.pic && <span className="font-medium">{item.pic}</span>}
                                                             </td>
                                                             <td className="p-4 align-top text-slate-600 text-sm hidden xl:table-cell" style={{ minWidth: '300px', maxWidth: '400px' }}>
                                                                 {item.progress && <div className="mb-2 whitespace-pre-wrap"><span className="font-semibold text-slate-700">追蹤:</span> {item.progress}</div>}
